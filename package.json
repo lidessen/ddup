@@ -1,0 +1,59 @@
+{
+  "name": "ddup",
+  "version": "0.1.0",
+  "description": "Day Day Up (天天向上)",
+  "author": "lidessen",
+  "license": "MIT",
+  "main": "dist/ddup.js",
+  "bin": {
+    "ddup": "./dist/ddup.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "bun run --watch src/ddup.tsx",
+    "prepublishOnly": "bun run build",
+    "link": "bun run build && npm link",
+    "format": "prettier --write .",
+    "lint": "oxlint --type-aware"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "confbox": "^0.2.2",
+    "execa": "^9.6.0",
+    "ink": "^6.2.3",
+    "meow": "^13.2.0",
+    "react": "^19.1.1"
+  },
+  "devDependencies": {
+    "@prettier/plugin-oxc": "^0.0.4",
+    "@types/react": "^19.1.12",
+    "oxlint": "^1.14.0",
+    "oxlint-tsgolint": "^0.1.5",
+    "prettier": "^3.6.2",
+    "tsdown": "^0.14.2"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "cli",
+    "update",
+    "dependencies",
+    "dev-tools",
+    "development",
+    "maintenance",
+    "homebrew",
+    "rust",
+    "deno",
+    "bun",
+    "npm",
+    "yarn",
+    "automation",
+    "day-day-up"
+  ]
+}
