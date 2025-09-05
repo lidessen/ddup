@@ -1,6 +1,6 @@
 {
   "name": "ddup",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "Day Day Up (天天向上)",
   "author": "lidessen",
   "license": "MIT",
@@ -15,7 +15,6 @@
   "scripts": {
     "build": "tsdown",
     "dev": "bun run --watch src/ddup.tsx",
-    "prepublishOnly": "bun run build",
     "link": "bun run build && npm link",
     "format": "prettier --write .",
     "lint": "oxlint --type-aware"
