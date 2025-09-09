@@ -366,6 +366,7 @@ const cli = meow(
     --interactive, -i  Interactive mode to select what to update
     --init             Create a configuration file at ~/.ddup.yml
     --config           Show configuration file path
+    --help, -h         Show this help message
 
   Examples
     $ ddup                 # Update all enabled tasks
@@ -386,9 +387,19 @@ const cli = meow(
       config: {
         type: "boolean",
       },
+      help: {
+        type: "boolean",
+        shortFlag: "h",
+      },
     },
   },
 );
+
+// Handle help and version flags (meow handles these automatically)
+if (cli.flags.help || cli.input.includes('help')) {
+  cli.showHelp();
+  process.exit(0);
+}
 
 if (cli.flags.config) {
   console.log(`Config file location: ${getConfigPath()}`);
