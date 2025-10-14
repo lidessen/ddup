@@ -23,17 +23,17 @@
     "@inkjs/ui": "^2.0.0",
     "confbox": "^0.2.2",
     "execa": "^9.6.0",
-    "ink": "^6.2.3",
-    "meow": "^13.2.0",
-    "react": "^19.1.1"
+    "ink": "^6.3.1",
+    "meow": "^14.0.0",
+    "react": "^19.2.0"
   },
   "devDependencies": {
     "@prettier/plugin-oxc": "^0.0.4",
-    "@types/react": "^19.1.12",
-    "oxlint": "^1.14.0",
-    "oxlint-tsgolint": "^0.1.5",
+    "@types/react": "^19.2.2",
+    "oxlint": "^1.23.0",
+    "oxlint-tsgolint": "^0.2.0",
     "prettier": "^3.6.2",
-    "tsdown": "^0.14.2"
+    "tsdown": "^0.15.7"
   },
   "type": "module",
   "engines": {
