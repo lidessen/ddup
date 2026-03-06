@@ -33,7 +33,7 @@ export function InteractiveSelect({ tasks, onSubmit }: InteractiveSelectProps) {
   }));
 
   return (
-    <box flexDirection="column" paddingTop={1} paddingBottom={1}>
+    <column paddingTop={1} paddingBottom={1}>
       <box marginBottom={1}>
         <text color="magenta" bold>
           ◆ Day Day Up 天天向上
@@ -51,6 +51,6 @@ export function InteractiveSelect({ tasks, onSubmit }: InteractiveSelectProps) {
       </box>
 
       <MultiSelect options={options} onConfirm={handleConfirm} />
-    </box>
+    </column>
   );
 }

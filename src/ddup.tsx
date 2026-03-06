@@ -6,6 +6,7 @@ import {
   useExit,
   onKeypress,
   Spinner,
+  BlankLine,
   when,
 } from "semajsx/terminal";
 import { execa } from "execa";
@@ -82,7 +83,7 @@ function OutputLine({ line }: { line: string }) {
       </box>
     );
   } else if (line.trim() === "") {
-    return <box height={1} />;
+    return <BlankLine />;
   } else {
     return (
       <text color="gray" dim>
@@ -306,7 +307,7 @@ function App({
   const hasOutput = computed([liveOutput], (lines) => lines.length > 0);
 
   return (
-    <box flexDirection="column">
+    <column>
       {when(isInteractive, () => (
         <InteractiveSelect
           tasks={tasks.value.map((t) => ({
@@ -319,26 +320,26 @@ function App({
       {when(
         computed([isInteractive], (v) => !v),
         () => (
-          <box flexDirection="column" paddingTop={1} paddingBottom={1}>
+          <column paddingTop={1} paddingBottom={1}>
             <box marginBottom={1}>
               <text color="magenta" bold>
                 ◆ Day Day Up 天天向上
               </text>
             </box>
 
-            <box flexDirection="column">
-              <box flexDirection="column" marginBottom={1}>
+            <column>
+              <column marginBottom={1}>
                 {taskListView}
-              </box>
+              </column>
 
               {when(hasOutput, () => (
-                <box flexDirection="column">{outputView}</box>
+                <column>{outputView}</column>
               ))}
-            </box>
-          </box>
+            </column>
+          </column>
         ),
       )}
-    </box>
+    </column>
   );
 }
 
