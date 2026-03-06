@@ -399,3 +399,4 @@ const app = render(
 );
 
 await app.waitUntilExit();
+process.exit(0);
