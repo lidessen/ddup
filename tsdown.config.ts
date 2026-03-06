@@ -8,4 +8,6 @@ export default defineConfig({
   clean: true,
   shims: true,
   dts: false,
+  jsx: "automatic",
+  jsxImportSource: "semajsx/terminal",
 });

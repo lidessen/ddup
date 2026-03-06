@@ -1,6 +1,4 @@
-import React from "react";
-import { Box, Text, useApp, useInput, useStdin } from "ink";
-import { MultiSelect } from "@inkjs/ui";
+import { useExit, onKeypress, MultiSelect } from "semajsx/terminal";
 
 interface InteractiveSelectProps {
   tasks: Array<{
@@ -10,24 +8,17 @@ interface InteractiveSelectProps {
   onSubmit: (selected: string[]) => void;
 }
 
-export const InteractiveSelect: React.FC<InteractiveSelectProps> = ({
-  tasks,
-  onSubmit,
-}) => {
-  const { exit } = useApp();
-  const { isRawModeSupported } = useStdin();
+export function InteractiveSelect({ tasks, onSubmit }: InteractiveSelectProps) {
+  const exit = useExit();
 
-  useInput(
-    (input, key) => {
-      if (input === "c" && key.ctrl) {
-        console.log("\n✨ Update cancelled by user");
-        exit();
-      }
-    },
-    { isActive: isRawModeSupported },
-  );
+  onKeypress((event) => {
+    if (event.key === "c" && event.ctrl) {
+      console.log("\n✨ Update cancelled by user");
+      exit();
+    }
+  });
 
-  const handleMultiSelectSubmit = (values: string[]) => {
+  const handleConfirm = (values: string[]) => {
     if (values.length === 0) {
       console.log("\n📌 No tasks selected. Exiting...");
       exit();
@@ -42,28 +33,24 @@ export const InteractiveSelect: React.FC<InteractiveSelectProps> = ({
   }));
 
   return (
-    <Box flexDirection="column" paddingY={1}>
-      <Box marginBottom={1}>
-        <Text color="magenta" bold>
+    <box flexDirection="column" paddingTop={1} paddingBottom={1}>
+      <box marginBottom={1}>
+        <text color="magenta" bold>
           ◆ Day Day Up 天天向上
-        </Text>
-      </Box>
+        </text>
+      </box>
 
-      <Box marginBottom={1}>
-        <Text color="gray">Select tools to update:</Text>
-      </Box>
+      <box marginBottom={1}>
+        <text color="gray">Select tools to update:</text>
+      </box>
 
-      <Box marginBottom={1}>
-        <Text dimColor italic>
+      <box marginBottom={1}>
+        <text dim italic>
           Space to select • Enter to confirm • Ctrl+C to cancel
-        </Text>
-      </Box>
+        </text>
+      </box>
 
-      <MultiSelect
-        options={options}
-        onSubmit={handleMultiSelectSubmit}
-        defaultValue={[]}
-      />
-    </Box>
+      <MultiSelect options={options} onConfirm={handleConfirm} />
+    </box>
   );
-};
+}
