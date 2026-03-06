@@ -416,9 +416,11 @@ if (cli.flags.config) {
   process.exit(0);
 }
 
-render(
+const app = render(
   <App
     interactive={cli.flags.interactive ?? false}
     initConfig={cli.flags.init ?? false}
   />,
 );
+
+await app.waitUntilExit();
