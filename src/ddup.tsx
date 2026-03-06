@@ -34,46 +34,24 @@ interface Task {
 function TaskItem({ task }: { task: Task }) {
   switch (task.status) {
     case "pending":
-      return (
-        <box>
-          <text color="gray">○ {task.name}</text>
-        </box>
-      );
+      return <text color="gray">○ {task.name}</text>;
     case "running":
-      return (
-        <box>
-          <Spinner label={task.name} />
-        </box>
-      );
+      return <Spinner label={task.name} />;
     case "completed":
-      return (
-        <box flexDirection="row">
-          <text color="green">✓ </text>
-          <text color="white">{task.name}</text>
-        </box>
-      );
+      return <text color="green">✓ {task.name}</text>;
     case "failed":
-      return (
-        <box flexDirection="row">
-          <text color="red">✗ </text>
-          <text color="white">{task.name}</text>
-        </box>
-      );
+      return <text color="red">✗ {task.name}</text>;
     case "skipped":
       return (
-        <box>
-          <text color="gray" dim>
-            - {task.name} (not installed)
-          </text>
-        </box>
+        <text color="gray" dim>
+          - {task.name} (not installed)
+        </text>
       );
     case "not_selected":
       return (
-        <box>
-          <text color="gray" dim strikethrough>
-            ⊘ {task.name} (skipped)
-          </text>
-        </box>
+        <text color="gray" dim strikethrough>
+          ⊘ {task.name} (skipped)
+        </text>
       );
     default:
       return <box />;
@@ -152,7 +130,6 @@ function App({
   const showInteractive = signal(interactive);
   const selectedTasks = signal<string[]>([]);
   const liveOutput = signal<string[]>([]);
-  const maxOutputLines = 15;
 
   const commandExists = async (command: string): Promise<boolean> => {
     try {
@@ -183,9 +160,7 @@ function App({
       if (!exists) {
         updateTaskStatus(taskIndex, "skipped");
         liveOutput.update((prev) =>
-          [...prev, `[${task.name}] Skipped - not installed`].slice(
-            -maxOutputLines,
-          ),
+          [...prev, `[${task.name}] Skipped - not installed`],
         );
         return;
       }
@@ -197,11 +172,11 @@ function App({
 
     if (liveOutput.value.length > 0) {
       liveOutput.update((prev) =>
-        [...prev, "", separator].slice(-maxOutputLines),
+        [...prev, "", separator],
       );
     } else {
       liveOutput.update((prev) =>
-        [...prev, separator].slice(-maxOutputLines),
+        [...prev, separator],
       );
     }
 
@@ -217,7 +192,7 @@ function App({
           .filter((line: string) => line.trim());
         outputLines.push(...lines);
 
-        liveOutput.update((prev) => [...prev, ...lines].slice(-maxOutputLines));
+        liveOutput.update((prev) => [...prev, ...lines]);
       });
 
       subprocess.stderr?.on("data", (data: Buffer) => {
@@ -227,7 +202,7 @@ function App({
           .filter((line: string) => line.trim());
         outputLines.push(...lines);
 
-        liveOutput.update((prev) => [...prev, ...lines].slice(-maxOutputLines));
+        liveOutput.update((prev) => [...prev, ...lines]);
       });
 
       await subprocess;
@@ -240,7 +215,7 @@ function App({
         .split("\n")
         .filter((line: string) => line.trim());
       liveOutput.update((prev) =>
-        [...prev, ...errorLines].slice(-maxOutputLines),
+        [...prev, ...errorLines],
       );
     }
   };
@@ -277,17 +252,17 @@ function App({
 
     const failedCount = tasks.value.filter((t) => t.status === "failed").length;
     if (failedCount > 0) {
-      liveOutput.update((prev) =>
-        [...prev, "", `⚠ Completed with ${failedCount} failure(s)`].slice(
-          -maxOutputLines,
-        ),
-      );
+      liveOutput.update((prev) => [
+        ...prev,
+        "",
+        `⚠ Completed with ${failedCount} failure(s)`,
+      ]);
     } else {
-      liveOutput.update((prev) =>
-        [...prev, "", "✨ All tasks completed successfully!"].slice(
-          -maxOutputLines,
-        ),
-      );
+      liveOutput.update((prev) => [
+        ...prev,
+        "",
+        "✨ All tasks completed successfully!",
+      ]);
     }
 
     setTimeout(() => {
