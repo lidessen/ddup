@@ -47,14 +47,14 @@ function TaskItem({ task }: { task: Task }) {
       );
     case "completed":
       return (
-        <box>
+        <box flexDirection="row">
           <text color="green">✓ </text>
           <text color="white">{task.name}</text>
         </box>
       );
     case "failed":
       return (
-        <box>
+        <box flexDirection="row">
           <text color="red">✗ </text>
           <text color="white">{task.name}</text>
         </box>
