@@ -80,6 +80,40 @@ function TaskItem({ task }: { task: Task }) {
   }
 }
 
+function OutputLine({ line }: { line: string }) {
+  if (line.startsWith("[") && line.endsWith("]")) {
+    return (
+      <text color="blue" bold>
+        {line}
+      </text>
+    );
+  } else if (line.startsWith("✨")) {
+    return (
+      <box marginTop={1}>
+        <text color="green" bold>
+          {line}
+        </text>
+      </box>
+    );
+  } else if (line.startsWith("⚠")) {
+    return (
+      <box marginTop={1}>
+        <text color="yellow" bold>
+          {line}
+        </text>
+      </box>
+    );
+  } else if (line.trim() === "") {
+    return <box height={1} />;
+  } else {
+    return (
+      <text color="gray" dim>
+        {line}
+      </text>
+    );
+  }
+}
+
 function App({
   interactive,
   initConfig,
@@ -284,6 +318,18 @@ function App({
     (show, running) => show && !running,
   );
 
+  // Reactive task list - re-evaluates when tasks signal changes
+  const taskListView = computed([tasks], (taskList) =>
+    taskList.map((task) => <TaskItem task={task} />),
+  );
+
+  // Reactive output view - re-evaluates when liveOutput signal changes
+  const outputView = computed([liveOutput], (lines) =>
+    lines.map((line) => <OutputLine line={line} />),
+  );
+
+  const hasOutput = computed([liveOutput], (lines) => lines.length > 0);
+
   return (
     <box flexDirection="column">
       {when(isInteractive, () => (
@@ -307,51 +353,12 @@ function App({
 
             <box flexDirection="column">
               <box flexDirection="column" marginBottom={1}>
-                {tasks.value.map((task) => (
-                  <TaskItem task={task} />
-                ))}
+                {taskListView}
               </box>
 
-              {when(
-                computed([liveOutput], (output) => output.length > 0),
-                () => (
-                  <box flexDirection="column">
-                    {liveOutput.value.map((line: string, i: number) => {
-                      if (line.startsWith("[") && line.endsWith("]")) {
-                        return (
-                          <text color="blue" bold>
-                            {line}
-                          </text>
-                        );
-                      } else if (line.startsWith("✨")) {
-                        return (
-                          <box marginTop={1}>
-                            <text color="green" bold>
-                              {line}
-                            </text>
-                          </box>
-                        );
-                      } else if (line.startsWith("⚠")) {
-                        return (
-                          <box marginTop={1}>
-                            <text color="yellow" bold>
-                              {line}
-                            </text>
-                          </box>
-                        );
-                      } else if (line.trim() === "") {
-                        return <box height={1} />;
-                      } else {
-                        return (
-                          <text color="gray" dim>
-                            {line}
-                          </text>
-                        );
-                      }
-                    })}
-                  </box>
-                ),
-              )}
+              {when(hasOutput, () => (
+                <box flexDirection="column">{outputView}</box>
+              ))}
             </box>
           </box>
         ),
