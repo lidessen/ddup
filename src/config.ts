@@ -20,7 +20,7 @@ const DEFAULT_CONFIG: DdupConfig = {
 };
 
 export function loadConfig(): DdupConfig {
-  const configPath = join(homedir(), ".ddup.yml");
+  const configPath = getConfigPath();
 
   if (!existsSync(configPath)) {
     return DEFAULT_CONFIG;
@@ -43,7 +43,7 @@ export function loadConfig(): DdupConfig {
 }
 
 export function getConfigPath(): string {
-  return join(homedir(), ".ddup.yml");
+  return process.env.DDUP_CONFIG || join(homedir(), ".ddup.yml");
 }
 
 export function generateExampleConfig(): string {

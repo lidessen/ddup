@@ -1,0 +1,16 @@
+tasks:
+  - name: Package Manager A
+    command: bash test/mock-task-a.sh
+    description: Mock 3s update task
+
+  - name: Package Manager B
+    command: bash test/mock-task-b.sh
+    description: Mock 2s update task
+
+  - name: Failing Task
+    command: bash test/mock-task-fail.sh
+    description: Mock task that fails
+
+  - name: Package Manager C
+    command: bash test/mock-task-c.sh
+    description: Mock 4s update task

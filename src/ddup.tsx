@@ -241,13 +241,16 @@ function App({
       });
     }
 
-    for (const task of tasksToRun) {
+    // Run all tasks concurrently
+    const taskPromises = tasksToRun.map((task) => {
       const taskIndex = currentTasks.findIndex((t) => t.name === task.name);
       if (taskIndex !== -1) {
-        await runTask(taskIndex);
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        return runTask(taskIndex);
       }
-    }
+      return Promise.resolve();
+    });
+
+    await Promise.allSettled(taskPromises);
 
     isRunning.set(false);
 
