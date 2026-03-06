@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 
-import React, { useState, useEffect } from "react";
-import { render, Text, Box, useApp, useInput } from "ink";
-import { Spinner } from "@inkjs/ui";
+import { signal, computed } from "semajsx";
+import {
+  render,
+  useExit,
+  onKeypress,
+  Spinner,
+  BlankLine,
+  when,
+} from "semajsx/terminal";
 import { execa } from "execa";
 import meow from "meow";
 import { writeFileSync } from "fs";
@@ -26,72 +32,75 @@ interface Task {
   description?: string;
 }
 
-const TaskItem: React.FC<{ task: Task }> = ({ task }) => {
-  const getStatusDisplay = () => {
-    switch (task.status) {
-      case "pending":
-        return (
-          <Box>
-            <Text color="gray">○ </Text>
-            <Text color="gray">{task.name}</Text>
-          </Box>
-        );
-      case "running":
-        return (
-          <Box>
-            <Spinner label={task.name} />
-          </Box>
-        );
-      case "completed":
-        return (
-          <Box>
-            <Text color="green">✓ </Text>
-            <Text color="white">{task.name}</Text>
-          </Box>
-        );
-      case "failed":
-        return (
-          <Box>
-            <Text color="red">✗ </Text>
-            <Text color="white">{task.name}</Text>
-          </Box>
-        );
-      case "skipped":
-        return (
-          <Box>
-            <Text color="gray">- </Text>
-            <Text color="gray">{task.name} </Text>
-            <Text color="gray" dimColor>
-              (not installed)
-            </Text>
-          </Box>
-        );
-      case "not_selected":
-        return (
-          <Box>
-            <Text color="gray">⊘ </Text>
-            <Text color="gray" dimColor strikethrough>
-              {task.name}
-            </Text>
-            <Text color="gray" dimColor>
-              {" "}
-              (skipped)
-            </Text>
-          </Box>
-        );
-      default:
-        return null;
-    }
-  };
+function TaskItem({ task }: { task: Task }) {
+  switch (task.status) {
+    case "pending":
+      return <text color="gray">○ {task.name}</text>;
+    case "running":
+      return <Spinner label={task.name} />;
+    case "completed":
+      return <text color="green">✓ {task.name}</text>;
+    case "failed":
+      return <text color="red">✗ {task.name}</text>;
+    case "skipped":
+      return (
+        <text color="gray" dim>
+          - {task.name} (not installed)
+        </text>
+      );
+    case "not_selected":
+      return (
+        <text color="gray" dim strikethrough>
+          ⊘ {task.name} (skipped)
+        </text>
+      );
+    default:
+      return <box />;
+  }
+}
 
-  return <Box>{getStatusDisplay()}</Box>;
-};
+function OutputLine({ line }: { line: string }) {
+  if (line.startsWith("[") && line.endsWith("]")) {
+    return (
+      <text color="blue" bold>
+        {line}
+      </text>
+    );
+  } else if (line.startsWith("✨")) {
+    return (
+      <box marginTop={1}>
+        <text color="green" bold>
+          {line}
+        </text>
+      </box>
+    );
+  } else if (line.startsWith("⚠")) {
+    return (
+      <box marginTop={1}>
+        <text color="yellow" bold>
+          {line}
+        </text>
+      </box>
+    );
+  } else if (line.trim() === "") {
+    return <BlankLine />;
+  } else {
+    return (
+      <text color="gray" dim>
+        {line}
+      </text>
+    );
+  }
+}
 
-const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
+function App({
   interactive,
   initConfig,
-}) => {
-  const { exit } = useApp();
+}: {
+  interactive: boolean;
+  initConfig?: boolean;
+}) {
+  const exit = useExit();
 
   if (initConfig) {
     const configPath = getConfigPath();
@@ -105,7 +114,7 @@ const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
       console.error(`✗ Failed to create config file: ${error}`);
     }
     exit();
-    return null;
+    return <box />;
   }
 
   const config = loadConfig();
@@ -117,14 +126,11 @@ const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
     description: task.description,
   }));
 
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-
-  const [isRunning, setIsRunning] = useState(false);
-  const [showInteractive, setShowInteractive] = useState(interactive);
-  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-  const [liveOutput, setLiveOutput] = useState<string[]>([]);
-  const [interactiveCompleted, setInteractiveCompleted] = useState(false);
-  const maxOutputLines = 15;
+  const tasks = signal<Task[]>(initialTasks);
+  const isRunning = signal(false);
+  const showInteractive = signal(interactive);
+  const selectedTasks = signal<string[]>([]);
+  const liveOutput = signal<string[]>([]);
 
   const commandExists = async (command: string): Promise<boolean> => {
     try {
@@ -140,24 +146,22 @@ const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
     status: TaskStatus,
     output?: string,
   ) => {
-    setTasks((prevTasks) => {
-      const newTasks = [...prevTasks];
+    tasks.update((prev) => {
+      const newTasks = [...prev];
       newTasks[index] = { ...newTasks[index], status, output };
       return newTasks;
     });
   };
 
   const runTask = async (taskIndex: number) => {
-    const task = tasks[taskIndex];
+    const task = tasks.value[taskIndex];
 
     if (task.checkCommand) {
       const exists = await commandExists(task.checkCommand);
       if (!exists) {
         updateTaskStatus(taskIndex, "skipped");
-        setLiveOutput((prev) =>
-          [...prev, `[${task.name}] Skipped - not installed`].slice(
-            -maxOutputLines,
-          ),
+        liveOutput.update((prev) =>
+          [...prev, `[${task.name}] Skipped - not installed`],
         );
         return;
       }
@@ -167,10 +171,14 @@ const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
 
     const separator = `[${task.name}]`;
 
-    if (liveOutput.length > 0) {
-      setLiveOutput((prev) => [...prev, "", separator].slice(-maxOutputLines));
+    if (liveOutput.value.length > 0) {
+      liveOutput.update((prev) =>
+        [...prev, "", separator],
+      );
     } else {
-      setLiveOutput((prev) => [...prev, separator].slice(-maxOutputLines));
+      liveOutput.update((prev) =>
+        [...prev, separator],
+      );
     }
 
     try {
@@ -178,30 +186,24 @@ const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
 
       const outputLines: string[] = [];
 
-      subprocess.stdout?.on("data", (data) => {
+      subprocess.stdout?.on("data", (data: Buffer) => {
         const lines = data
           .toString()
           .split("\n")
           .filter((line: string) => line.trim());
         outputLines.push(...lines);
 
-        setLiveOutput((prev) => {
-          const newLines = lines.map((line: string) => line);
-          return [...prev, ...newLines].slice(-maxOutputLines);
-        });
+        liveOutput.update((prev) => [...prev, ...lines]);
       });
 
-      subprocess.stderr?.on("data", (data) => {
+      subprocess.stderr?.on("data", (data: Buffer) => {
         const lines = data
           .toString()
           .split("\n")
           .filter((line: string) => line.trim());
         outputLines.push(...lines);
 
-        setLiveOutput((prev) => {
-          const newLines = lines.map((line: string) => line);
-          return [...prev, ...newLines].slice(-maxOutputLines);
-        });
+        liveOutput.update((prev) => [...prev, ...lines]);
       });
 
       await subprocess;
@@ -213,50 +215,58 @@ const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
       const errorLines = errorOutput
         .split("\n")
         .filter((line: string) => line.trim());
-      setLiveOutput((prev) => [...prev, ...errorLines].slice(-maxOutputLines));
+      liveOutput.update((prev) =>
+        [...prev, ...errorLines],
+      );
     }
   };
 
   const runAllTasks = async () => {
-    setIsRunning(true);
-    setLiveOutput([]);
+    isRunning.set(true);
+    liveOutput.set([]);
+
+    const currentTasks = tasks.value;
+    const selected = selectedTasks.value;
 
     const tasksToRun =
-      interactive && selectedTasks.length > 0
-        ? tasks.filter((t) => selectedTasks.includes(t.name))
-        : tasks;
+      interactive && selected.length > 0
+        ? currentTasks.filter((t) => selected.includes(t.name))
+        : currentTasks;
 
-    if (interactive && selectedTasks.length > 0) {
-      tasks.forEach((task, index) => {
-        if (!selectedTasks.includes(task.name)) {
+    if (interactive && selected.length > 0) {
+      currentTasks.forEach((task, index) => {
+        if (!selected.includes(task.name)) {
           updateTaskStatus(index, "not_selected");
         }
       });
     }
 
-    for (const task of tasksToRun) {
-      const taskIndex = tasks.findIndex((t) => t.name === task.name);
+    // Run all tasks concurrently
+    const taskPromises = tasksToRun.map((task) => {
+      const taskIndex = currentTasks.findIndex((t) => t.name === task.name);
       if (taskIndex !== -1) {
-        await runTask(taskIndex);
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        return runTask(taskIndex);
       }
-    }
+      return Promise.resolve();
+    });
 
-    setIsRunning(false);
+    await Promise.allSettled(taskPromises);
 
-    const failedCount = tasks.filter((t) => t.status === "failed").length;
+    isRunning.set(false);
+
+    const failedCount = tasks.value.filter((t) => t.status === "failed").length;
     if (failedCount > 0) {
-      setLiveOutput((prev) =>
-        [...prev, "", `⚠ Completed with ${failedCount} failure(s)`].slice(
-          -maxOutputLines,
-        ),
-      );
+      liveOutput.update((prev) => [
+        ...prev,
+        "",
+        `⚠ Completed with ${failedCount} failure(s)`,
+      ]);
     } else {
-      setLiveOutput((prev) =>
-        [...prev, "", "✨ All tasks completed successfully!"].slice(
-          -maxOutputLines,
-        ),
-      );
+      liveOutput.update((prev) => [
+        ...prev,
+        "",
+        "✨ All tasks completed successfully!",
+      ]);
     }
 
     setTimeout(() => {
@@ -265,97 +275,76 @@ const App: React.FC<{ interactive: boolean; initConfig?: boolean }> = ({
   };
 
   const handleInteractiveSubmit = (selected: string[]) => {
-    setSelectedTasks(selected);
-    setShowInteractive(false);
-    setInteractiveCompleted(true);
+    selectedTasks.set(selected);
+    showInteractive.set(false);
+    void runAllTasks();
   };
 
-  useInput(
-    (input, key) => {
-      if (input === "c" && key.ctrl && isRunning) {
-        console.log("\n⚠️  Update interrupted by user");
-        exit();
-      }
-    },
-    { isActive: process.stdin.isTTY && !process.env.CI && isRunning },
-  );
-
-  useEffect(() => {
-    if (!showInteractive && !interactive) {
-      void runAllTasks();
-    } else if (interactiveCompleted && selectedTasks.length > 0) {
-      void runAllTasks();
+  onKeypress((event) => {
+    if (event.key === "c" && event.ctrl && isRunning.value) {
+      console.log("\n⚠️  Update interrupted by user");
+      exit();
     }
-  }, [interactiveCompleted]);
+  });
 
-  if (showInteractive && !isRunning) {
-    return (
-      <InteractiveSelect
-        tasks={tasks.map((t) => ({
-          name: t.name,
-          description: t.description,
-        }))}
-        onSubmit={handleInteractiveSubmit}
-      />
-    );
+  // Auto-start for non-interactive mode
+  if (!interactive) {
+    void runAllTasks();
   }
 
-  return (
-    <Box flexDirection="column" paddingY={1}>
-      <Box marginBottom={1}>
-        <Text color="magenta" bold>
-          ◆ Day Day Up 天天向上
-        </Text>
-      </Box>
-
-      <Box flexDirection="column">
-        <Box flexDirection="column" marginBottom={1}>
-          {tasks.map((task) => (
-            <TaskItem key={task.name} task={task} />
-          ))}
-        </Box>
-
-        {liveOutput.length > 0 && (
-          <Box flexDirection="column">
-            {liveOutput.map((line: string, i: number) => {
-              if (line.startsWith("[") && line.endsWith("]")) {
-                return (
-                  <Text key={i} color="blue" bold>
-                    {line}
-                  </Text>
-                );
-              } else if (line.startsWith("✨")) {
-                return (
-                  <Box key={i} marginTop={1}>
-                    <Text color="green" bold>
-                      {line}
-                    </Text>
-                  </Box>
-                );
-              } else if (line.startsWith("⚠")) {
-                return (
-                  <Box key={i} marginTop={1}>
-                    <Text color="yellow" bold>
-                      {line}
-                    </Text>
-                  </Box>
-                );
-              } else if (line.trim() === "") {
-                return <Box key={i} height={1} />;
-              } else {
-                return (
-                  <Text key={i} color="gray" dimColor>
-                    {line}
-                  </Text>
-                );
-              }
-            })}
-          </Box>
-        )}
-      </Box>
-    </Box>
+  const isInteractive = computed(
+    [showInteractive, isRunning],
+    (show, running) => show && !running,
   );
-};
+
+  // Reactive task list - re-evaluates when tasks signal changes
+  const taskListView = computed([tasks], (taskList) =>
+    taskList.map((task) => <TaskItem task={task} />),
+  );
+
+  // Reactive output view - re-evaluates when liveOutput signal changes
+  const outputView = computed([liveOutput], (lines) =>
+    lines.map((line) => <OutputLine line={line} />),
+  );
+
+  const hasOutput = computed([liveOutput], (lines) => lines.length > 0);
+
+  return (
+    <column>
+      {when(isInteractive, () => (
+        <InteractiveSelect
+          tasks={tasks.value.map((t) => ({
+            name: t.name,
+            description: t.description,
+          }))}
+          onSubmit={handleInteractiveSubmit}
+        />
+      ))}
+      {when(
+        computed([isInteractive], (v) => !v),
+        () => (
+          <column paddingTop={1} paddingBottom={1}>
+            <box marginBottom={1}>
+              <text color="magenta" bold>
+                ◆ Day Day Up 天天向上
+              </text>
+            </box>
+
+            <column>
+              <column marginBottom={1}>
+                {taskListView}
+              </column>
+
+              {when(hasOutput, () => (
+                <column>{outputView}</column>
+              ))}
+            </column>
+          </column>
+        ),
+      )}
+    </column>
+  );
+}
 
 const cli = meow(
   `
@@ -396,7 +385,7 @@ const cli = meow(
 );
 
 // Handle help and version flags (meow handles these automatically)
-if (cli.flags.help || cli.input.includes('help')) {
+if (cli.flags.help || cli.input.includes("help")) {
   cli.showHelp();
   process.exit(0);
 }
@@ -406,9 +395,12 @@ if (cli.flags.config) {
   process.exit(0);
 }
 
-render(
+const app = render(
   <App
     interactive={cli.flags.interactive ?? false}
     initConfig={cli.flags.init ?? false}
   />,
 );
+
+await app.waitUntilExit();
+process.exit(0);
